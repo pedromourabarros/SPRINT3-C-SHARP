@@ -1,0 +1,68 @@
+@startuml Diagrama ER - Sistema de Apostas Compulsivas
+
+!theme plain
+skinparam linetype ortho
+
+entity "Usuarios" as usuarios {
+    * Id : INTEGER <<PK>>
+    --
+    * Nome : TEXT
+    * Email : TEXT <<UK>>
+    * Saldo : DECIMAL(10,2)
+    * DataCadastro : DATETIME
+    * Ativo : BOOLEAN
+}
+
+entity "Apostas" as apostas {
+    * Id : INTEGER <<PK>>
+    --
+    * UsuarioId : INTEGER <<FK>>
+    * TipoAposta : TEXT
+    * Valor : DECIMAL(10,2)
+    * Multiplicador : DECIMAL(5,2)
+    * Status : TEXT
+    ValorGanho : DECIMAL(10,2)
+    * DataAposta : DATETIME
+    DataResultado : DATETIME
+}
+
+entity "Historico" as historico {
+    * Id : INTEGER <<PK>>
+    --
+    * UsuarioId : INTEGER <<FK>>
+    * TipoOperacao : TEXT
+    * Valor : DECIMAL(10,2)
+    * Descricao : TEXT
+    * DataOperacao : DATETIME
+    * SaldoAnterior : DECIMAL(10,2)
+    * SaldoPosterior : DECIMAL(10,2)
+}
+
+' Relacionamentos
+usuarios ||--o{ apostas : "realiza"
+usuarios ||--o{ historico : "gera"
+
+' Notas
+note right of usuarios
+  Tabela principal que armazena
+  os dados dos usuários do sistema.
+  Cada usuário possui um email único
+  e pode ter múltiplas apostas e
+  operações no histórico.
+end note
+
+note right of apostas
+  Armazena todas as apostas realizadas
+  pelos usuários. Cada aposta está
+  vinculada a um usuário e pode ter
+  status Pendente, Ganhou ou Perdeu.
+end note
+
+note right of historico
+  Registra todas as operações
+  financeiras do sistema, incluindo
+  depósitos, saques, apostas e
+  resultados de apostas.
+end note
+
+@enduml

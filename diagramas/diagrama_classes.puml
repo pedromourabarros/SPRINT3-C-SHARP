@@ -1,0 +1,280 @@
+@startuml Diagrama de Classes - Sistema de Apostas Compulsivas
+
+!theme plain
+skinparam classAttributeIconSize 0
+
+package "Models" {
+    class Usuario {
+        +int Id
+        +string Nome
+        +string Email
+        +decimal Saldo
+        +DateTime DataCadastro
+        +bool Ativo
+        +Usuario()
+        +Usuario(nome, email, saldoInicial)
+        +ToString() : string
+    }
+
+    class Aposta {
+        +int Id
+        +int UsuarioId
+        +string TipoAposta
+        +decimal Valor
+        +decimal Multiplicador
+        +string Status
+        +decimal? ValorGanho
+        +DateTime DataAposta
+        +DateTime? DataResultado
+        +Aposta()
+        +Aposta(usuarioId, tipoAposta, valor, multiplicador)
+        +CalcularValorGanho() : decimal
+        +FinalizarAposta(ganhou) : void
+        +ToString() : string
+    }
+
+    class Historico {
+        +int Id
+        +int UsuarioId
+        +string TipoOperacao
+        +decimal Valor
+        +string Descricao
+        +DateTime DataOperacao
+        +decimal SaldoAnterior
+        +decimal SaldoPosterior
+        +Historico()
+        +Historico(usuarioId, tipoOperacao, valor, descricao, saldoAnterior, saldoPosterior)
+        +ToString() : string
+    }
+}
+
+package "Repository" {
+    interface IUsuarioRepository {
+        +CreateAsync(usuario) : Task<Usuario>
+        +GetByIdAsync(id) : Task<Usuario?>
+        +GetByEmailAsync(email) : Task<Usuario?>
+        +GetAllAsync() : Task<List<Usuario>>
+        +UpdateAsync(usuario) : Task<Usuario>
+        +DeleteAsync(id) : Task<bool>
+        +ExistsAsync(id) : Task<bool>
+        +EmailExistsAsync(email) : Task<bool>
+    }
+
+    class UsuarioRepository {
+        -string _connectionString
+        +UsuarioRepository(connectionString)
+        +CreateAsync(usuario) : Task<Usuario>
+        +GetByIdAsync(id) : Task<Usuario?>
+        +GetByEmailAsync(email) : Task<Usuario?>
+        +GetAllAsync() : Task<List<Usuario>>
+        +UpdateAsync(usuario) : Task<Usuario>
+        +DeleteAsync(id) : Task<bool>
+        +ExistsAsync(id) : Task<bool>
+        +EmailExistsAsync(email) : Task<bool>
+        -MapUsuario(reader) : Usuario
+    }
+
+    interface IApostaRepository {
+        +CreateAsync(aposta) : Task<Aposta>
+        +GetByIdAsync(id) : Task<Aposta?>
+        +GetByUsuarioIdAsync(usuarioId) : Task<List<Aposta>>
+        +GetAllAsync() : Task<List<Aposta>>
+        +UpdateAsync(aposta) : Task<Aposta>
+        +DeleteAsync(id) : Task<bool>
+        +GetByStatusAsync(status) : Task<List<Aposta>>
+        +GetByDataRangeAsync(dataInicio, dataFim) : Task<List<Aposta>>
+    }
+
+    class ApostaRepository {
+        -string _connectionString
+        +ApostaRepository(connectionString)
+        +CreateAsync(aposta) : Task<Aposta>
+        +GetByIdAsync(id) : Task<Aposta?>
+        +GetByUsuarioIdAsync(usuarioId) : Task<List<Aposta>>
+        +GetAllAsync() : Task<List<Aposta>>
+        +UpdateAsync(aposta) : Task<Aposta>
+        +DeleteAsync(id) : Task<bool>
+        +GetByStatusAsync(status) : Task<List<Aposta>>
+        +GetByDataRangeAsync(dataInicio, dataFim) : Task<List<Aposta>>
+        -MapAposta(reader) : Aposta
+    }
+
+    interface IHistoricoRepository {
+        +CreateAsync(historico) : Task<Historico>
+        +GetByUsuarioIdAsync(usuarioId) : Task<List<Historico>>
+        +GetAllAsync() : Task<List<Historico>>
+        +GetByTipoOperacaoAsync(tipoOperacao) : Task<List<Historico>>
+        +GetByDataRangeAsync(dataInicio, dataFim) : Task<List<Historico>>
+    }
+
+    class HistoricoRepository {
+        -string _connectionString
+        +HistoricoRepository(connectionString)
+        +CreateAsync(historico) : Task<Historico>
+        +GetByUsuarioIdAsync(usuarioId) : Task<List<Historico>>
+        +GetAllAsync() : Task<List<Historico>>
+        +GetByTipoOperacaoAsync(tipoOperacao) : Task<List<Historico>>
+        +GetByDataRangeAsync(dataInicio, dataFim) : Task<List<Historico>>
+        -MapHistorico(reader) : Historico
+    }
+
+    class DatabaseContext {
+        -string _connectionString
+        -string _databasePath
+        +DatabaseContext()
+        +GetConnectionString() : string
+        -InitializeDatabase() : void
+    }
+}
+
+package "Services" {
+    interface IUsuarioService {
+        +CriarUsuarioAsync(nome, email, saldoInicial) : Task<Usuario>
+        +ObterUsuarioPorIdAsync(id) : Task<Usuario?>
+        +ObterUsuarioPorEmailAsync(email) : Task<Usuario?>
+        +ListarUsuariosAsync() : Task<List<Usuario>>
+        +AtualizarUsuarioAsync(usuario) : Task<Usuario>
+        +DesativarUsuarioAsync(id) : Task<bool>
+        +DepositarAsync(usuarioId, valor) : Task<bool>
+        +SacarAsync(usuarioId, valor) : Task<bool>
+        +UsuarioExisteAsync(id) : Task<bool>
+        +EmailExisteAsync(email) : Task<bool>
+    }
+
+    class UsuarioService {
+        -IUsuarioRepository _usuarioRepository
+        -IHistoricoRepository _historicoRepository
+        +UsuarioService(usuarioRepository, historicoRepository)
+        +CriarUsuarioAsync(nome, email, saldoInicial) : Task<Usuario>
+        +ObterUsuarioPorIdAsync(id) : Task<Usuario?>
+        +ObterUsuarioPorEmailAsync(email) : Task<Usuario?>
+        +ListarUsuariosAsync() : Task<List<Usuario>>
+        +AtualizarUsuarioAsync(usuario) : Task<Usuario>
+        +DesativarUsuarioAsync(id) : Task<bool>
+        +DepositarAsync(usuarioId, valor) : Task<bool>
+        +SacarAsync(usuarioId, valor) : Task<bool>
+        +UsuarioExisteAsync(id) : Task<bool>
+        +EmailExisteAsync(email) : Task<bool>
+        -IsValidEmail(email) : bool
+    }
+
+    interface IApostaService {
+        +RealizarApostaAsync(usuarioId, tipoAposta, valor, multiplicador) : Task<Aposta>
+        +ObterApostaPorIdAsync(id) : Task<Aposta?>
+        +ObterApostasPorUsuarioAsync(usuarioId) : Task<List<Aposta>>
+        +ListarApostasAsync() : Task<List<Aposta>>
+        +FinalizarApostaAsync(apostaId, ganhou) : Task<Aposta>
+        +ObterApostasPorStatusAsync(status) : Task<List<Aposta>>
+        +ObterApostasPorPeriodoAsync(dataInicio, dataFim) : Task<List<Aposta>>
+        +CalcularTotalApostadoAsync(usuarioId) : Task<decimal>
+        +CalcularTotalGanhoAsync(usuarioId) : Task<decimal>
+    }
+
+    class ApostaService {
+        -IApostaRepository _apostaRepository
+        -IUsuarioRepository _usuarioRepository
+        -IHistoricoRepository _historicoRepository
+        +ApostaService(apostaRepository, usuarioRepository, historicoRepository)
+        +RealizarApostaAsync(usuarioId, tipoAposta, valor, multiplicador) : Task<Aposta>
+        +ObterApostaPorIdAsync(id) : Task<Aposta?>
+        +ObterApostasPorUsuarioAsync(usuarioId) : Task<List<Aposta>>
+        +ListarApostasAsync() : Task<List<Aposta>>
+        +FinalizarApostaAsync(apostaId, ganhou) : Task<Aposta>
+        +ObterApostasPorStatusAsync(status) : Task<List<Aposta>>
+        +ObterApostasPorPeriodoAsync(dataInicio, dataFim) : Task<List<Aposta>>
+        +CalcularTotalApostadoAsync(usuarioId) : Task<decimal>
+        +CalcularTotalGanhoAsync(usuarioId) : Task<decimal>
+    }
+
+    interface IHistoricoService {
+        +ObterHistoricoPorUsuarioAsync(usuarioId) : Task<List<Historico>>
+        +ObterHistoricoCompletoAsync() : Task<List<Historico>>
+        +ObterHistoricoPorTipoAsync(tipoOperacao) : Task<List<Historico>>
+        +ObterHistoricoPorPeriodoAsync(dataInicio, dataFim) : Task<List<Historico>>
+        +CalcularSaldoAtualAsync(usuarioId) : Task<decimal>
+        +ObterUltimasOperacoesAsync(usuarioId, quantidade) : Task<List<Historico>>
+    }
+
+    class HistoricoService {
+        -IHistoricoRepository _historicoRepository
+        -IUsuarioRepository _usuarioRepository
+        +HistoricoService(historicoRepository, usuarioRepository)
+        +ObterHistoricoPorUsuarioAsync(usuarioId) : Task<List<Historico>>
+        +ObterHistoricoCompletoAsync() : Task<List<Historico>>
+        +ObterHistoricoPorTipoAsync(tipoOperacao) : Task<List<Historico>>
+        +ObterHistoricoPorPeriodoAsync(dataInicio, dataFim) : Task<List<Historico>>
+        +CalcularSaldoAtualAsync(usuarioId) : Task<decimal>
+        +ObterUltimasOperacoesAsync(usuarioId, quantidade) : Task<List<Historico>>
+    }
+
+    interface IFileService {
+        +SalvarHistoricoTxtAsync(historicos, nomeArquivo) : Task
+        +CarregarHistoricoTxtAsync(nomeArquivo) : Task<List<Historico>>
+        +SalvarUsuariosJsonAsync(usuarios, nomeArquivo) : Task
+        +CarregarUsuariosJsonAsync(nomeArquivo) : Task<List<Usuario>>
+        +SalvarApostasJsonAsync(apostas, nomeArquivo) : Task
+        +CarregarApostasJsonAsync(nomeArquivo) : Task<List<Aposta>>
+        +SalvarRelatorioCompletoAsync(usuarios, apostas, historicos, nomeArquivo) : Task
+        +ArquivoExisteAsync(nomeArquivo) : Task<bool>
+        +ListarArquivosAsync(extensao) : Task<string[]>
+    }
+
+    class FileService {
+        -string _diretorioArquivos
+        +FileService()
+        +SalvarHistoricoTxtAsync(historicos, nomeArquivo) : Task
+        +CarregarHistoricoTxtAsync(nomeArquivo) : Task<List<Historico>>
+        +SalvarUsuariosJsonAsync(usuarios, nomeArquivo) : Task
+        +CarregarUsuariosJsonAsync(nomeArquivo) : Task<List<Usuario>>
+        +SalvarApostasJsonAsync(apostas, nomeArquivo) : Task
+        +CarregarApostasJsonAsync(nomeArquivo) : Task<List<Aposta>>
+        +SalvarRelatorioCompletoAsync(usuarios, apostas, historicos, nomeArquivo) : Task
+        +ArquivoExisteAsync(nomeArquivo) : Task<bool>
+        +ListarArquivosAsync(extensao) : Task<string[]>
+    }
+}
+
+package "Program" {
+    class Program {
+        -IUsuarioService _usuarioService
+        -IApostaService _apostaService
+        -IHistoricoService _historicoService
+        -IFileService _fileService
+        +Main(args) : Task
+        -InicializarServicos() : Task
+        -ExibirMenuPrincipal() : Task
+        -MenuUsuarios() : Task
+        -MenuApostas() : Task
+        -MenuRelatorios() : Task
+        -MenuBackup() : Task
+        -MenuConfiguracoes() : Task
+    }
+}
+
+' Relacionamentos
+Usuario ||--o{ Aposta : "possui"
+Usuario ||--o{ Historico : "gera"
+
+UsuarioRepository ..|> IUsuarioRepository
+ApostaRepository ..|> IApostaRepository
+HistoricoRepository ..|> IHistoricoRepository
+
+UsuarioService ..|> IUsuarioService
+ApostaService ..|> IApostaService
+HistoricoService ..|> IHistoricoService
+FileService ..|> IFileService
+
+UsuarioService --> IUsuarioRepository : uses
+UsuarioService --> IHistoricoRepository : uses
+ApostaService --> IApostaRepository : uses
+ApostaService --> IUsuarioRepository : uses
+ApostaService --> IHistoricoRepository : uses
+HistoricoService --> IHistoricoRepository : uses
+HistoricoService --> IUsuarioRepository : uses
+
+Program --> IUsuarioService : uses
+Program --> IApostaService : uses
+Program --> IHistoricoService : uses
+Program --> IFileService : uses
+
+@enduml

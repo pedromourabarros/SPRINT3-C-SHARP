@@ -1,0 +1,116 @@
+@startuml Diagrama de Arquitetura - Sistema de Apostas Compulsivas
+
+!theme plain
+skinparam linetype ortho
+skinparam rectangle {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+}
+
+package "Apresentação (Presentation Layer)" {
+    [Interface Console] as console
+    [Menu Principal] as menu
+    [Validação de Entrada] as validacao
+}
+
+package "Regras de Negócio (Business Layer)" {
+    [UsuarioService] as usuarioService
+    [ApostaService] as apostaService
+    [HistoricoService] as historicoService
+    [FileService] as fileService
+}
+
+package "Acesso a Dados (Data Access Layer)" {
+    [UsuarioRepository] as usuarioRepo
+    [ApostaRepository] as apostaRepo
+    [HistoricoRepository] as historicoRepo
+    [DatabaseContext] as dbContext
+}
+
+package "Persistência (Persistence Layer)" {
+    database "SQLite Database" as sqlite {
+        [Tabela Usuarios] as usuarios
+        [Tabela Apostas] as apostas
+        [Tabela Historico] as historico
+    }
+}
+
+package "Sistema de Arquivos (File System)" {
+    folder "Pasta Arquivos" as arquivos {
+        [Backup JSON] as backupJson
+        [Histórico TXT] as historicoTxt
+        [Relatórios] as relatorios
+    }
+}
+
+' Relacionamentos da camada de apresentação
+console --> menu
+menu --> validacao
+validacao --> usuarioService
+validacao --> apostaService
+validacao --> historicoService
+validacao --> fileService
+
+' Relacionamentos da camada de negócio
+usuarioService --> usuarioRepo
+usuarioService --> historicoRepo
+apostaService --> apostaRepo
+apostaService --> usuarioRepo
+apostaService --> historicoRepo
+historicoService --> historicoRepo
+historicoService --> usuarioRepo
+fileService --> arquivos
+
+' Relacionamentos da camada de acesso a dados
+usuarioRepo --> dbContext
+apostaRepo --> dbContext
+historicoRepo --> dbContext
+dbContext --> sqlite
+
+' Relacionamentos da persistência
+sqlite --> usuarios
+sqlite --> apostas
+sqlite --> historico
+
+' Relacionamentos do sistema de arquivos
+fileService --> backupJson
+fileService --> historicoTxt
+fileService --> relatorios
+
+' Notas explicativas
+note top of console
+  Interface de linha de comando
+  que permite interação com o
+  usuário através de menus
+  e validação de entrada.
+end note
+
+note right of usuarioService
+  Camada de regras de negócio
+  responsável por validar
+  operações de usuários e
+  manter consistência dos dados.
+end note
+
+note right of usuarioRepo
+  Camada de acesso a dados
+  que abstrai as operações
+  de banco de dados usando
+  o padrão Repository.
+end note
+
+note bottom of sqlite
+  Banco de dados SQLite
+  que persiste todas as
+  informações do sistema
+  de forma local.
+end note
+
+note bottom of arquivos
+  Sistema de arquivos para
+  backup, exportação e
+  relatórios em formatos
+  TXT e JSON.
+end note
+
+@enduml

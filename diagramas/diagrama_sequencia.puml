@@ -1,0 +1,72 @@
+@startuml Diagrama de Sequência - Realizar Aposta
+
+!theme plain
+skinparam sequenceMessageAlign left
+
+actor Usuario as user
+participant "Program" as program
+participant "ApostaService" as apostaService
+participant "UsuarioService" as usuarioService
+participant "ApostaRepository" as apostaRepo
+participant "UsuarioRepository" as usuarioRepo
+participant "HistoricoRepository" as historicoRepo
+participant "SQLite Database" as database
+
+user -> program : Escolhe "Realizar Aposta"
+program -> user : Solicita ID do usuário
+user -> program : Informa ID do usuário
+program -> usuarioService : ObterUsuarioPorIdAsync(id)
+usuarioService -> usuarioRepo : GetByIdAsync(id)
+usuarioRepo -> database : SELECT * FROM Usuarios WHERE Id = @Id
+database --> usuarioRepo : Retorna dados do usuário
+usuarioRepo --> usuarioService : Retorna Usuario
+usuarioService --> program : Retorna Usuario
+
+alt Usuário não encontrado
+    program -> user : Exibe erro "Usuário não encontrado"
+else Usuário encontrado
+    program -> user : Exibe dados do usuário e solicita dados da aposta
+    user -> program : Informa tipo, valor e multiplicador
+    program -> apostaService : RealizarApostaAsync(usuarioId, tipoAposta, valor, multiplicador)
+    
+    apostaService -> apostaService : Valida dados de entrada
+    
+    alt Dados inválidos
+        apostaService --> program : Lança exceção
+        program -> user : Exibe erro de validação
+    else Dados válidos
+        apostaService -> usuarioService : ObterUsuarioPorIdAsync(usuarioId)
+        usuarioService -> usuarioRepo : GetByIdAsync(usuarioId)
+        usuarioRepo -> database : SELECT * FROM Usuarios WHERE Id = @Id
+        database --> usuarioRepo : Retorna dados do usuário
+        usuarioRepo --> usuarioService : Retorna Usuario
+        usuarioService --> apostaService : Retorna Usuario
+        
+        alt Usuário inativo ou saldo insuficiente
+            apostaService --> program : Lança exceção
+            program -> user : Exibe erro de negócio
+        else Usuário ativo e saldo suficiente
+            apostaService -> apostaRepo : CreateAsync(aposta)
+            apostaRepo -> database : INSERT INTO Apostas (...)
+            database --> apostaRepo : Retorna ID da aposta
+            apostaRepo --> apostaService : Retorna Aposta criada
+            
+            apostaService -> usuarioService : Atualizar saldo do usuário
+            usuarioService -> usuarioRepo : UpdateAsync(usuario)
+            usuarioRepo -> database : UPDATE Usuarios SET Saldo = @Saldo WHERE Id = @Id
+            database --> usuarioRepo : Confirma atualização
+            usuarioRepo --> usuarioService : Confirma atualização
+            usuarioService --> apostaService : Confirma atualização
+            
+            apostaService -> historicoRepo : CreateAsync(historico)
+            historicoRepo -> database : INSERT INTO Historico (...)
+            database --> historicoRepo : Confirma inserção
+            historicoRepo --> apostaService : Confirma inserção
+            
+            apostaService --> program : Retorna Aposta criada
+            program -> user : Exibe sucesso e dados da aposta
+        end
+    end
+end
+
+@enduml
