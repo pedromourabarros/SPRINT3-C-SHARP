@@ -227,4 +227,3 @@ http://localhost:5000/swagger
 - ✅ Documentação completa
 - ✅ Código limpo e comentado
 
-**🎉 Projeto pronto para avaliação!**
